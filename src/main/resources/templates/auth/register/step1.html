@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация - Шаг 1</title>
+</head>
+<body>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Регистрация - Шаг 1 из 3</h4>
+                    <small class="text-muted">Персональные данные</small>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/register/step1}" method="post" th:object="${step1}">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Фамилия *</label>
+                                <input type="text" class="form-control" th:field="*{lastName}">
+                                <div class="text-danger" th:if="${#fields.hasErrors('lastName')}"
+                                     th:errors="*{lastName}"></div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Имя *</label>
+                                <input type="text" class="form-control" th:field="*{firstName}">
+                                <div class="text-danger" th:if="${#fields.hasErrors('firstName')}"
+                                     th:errors="*{firstName}"></div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Отчество</label>
+                                <input type="text" class="form-control" th:field="*{middleName}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Дата рождения *</label>
+                            <input type="date" class="form-control" th:field="*{birthDate}">
+                            <div class="text-danger" th:if="${#fields.hasErrors('birthDate')}"
+                                 th:errors="*{birthDate}"></div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Регион *</label>
+                                <input type="text" class="form-control" th:field="*{region}">
+                                <div class="text-danger" th:if="${#fields.hasErrors('region')}"
+                                     th:errors="*{region}"></div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Город *</label>
+                                <input type="text" class="form-control" th:field="*{city}">
+                                <div class="text-danger" th:if="${#fields.hasErrors('city')}"
+                                     th:errors="*{city}"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a th:href="@{/login}" class="btn btn-secondary">Отмена</a>
+                            <button type="submit" class="btn btn-primary">Далее →</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

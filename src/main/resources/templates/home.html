@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Личный кабинет — Мой Банк</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/css/home.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center">
+            <a class="navbar-brand fw-bold">
+                <i class="bi bi-bank me-2"></i>Мой Банк
+            </a>
+
+            <div sec:authorize="hasRole('ADMIN')" class="ms-3">
+                <a th:href="@{/backup}" class="btn btn-outline-light">
+                    <i class="bi bi-cloud-download me-1"></i>
+                    <span class="d-none d-sm-inline">Бекапы</span>
+                </a>
+
+                <a th:href="@{/statement}" class="btn btn-outline-light">
+                    <i class="bi bi-journal-text me-1"></i>
+                    <span class="d-none d-sm-inline">Сформировать выписку</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="d-flex gap-1">
+            <a th:href="@{/branch}" class="btn btn-branch text-white me-1" title="Филиалы">
+                <i class="bi bi-building"></i>
+                <span class="d-none d-sm-inline ms-1">Филиалы</span>
+            </a>
+            <a th:href="@{/cash-machine}" class="btn btn-atm text-white me-1" title="Банкоматы">
+                <i class="bi bi-cash-coin"></i>
+                <span class="d-none d-sm-inline ms-1">Банкоматы</span>
+            </a>
+            <a th:href="@{/profile}" class="btn btn-profile text-white me-1">Профиль</a>
+            <form th:action="@{/logout}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-logout text-white">Выйти</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-5">
+
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="section-title">Ваши карты</h3>
+            <a th:href="@{/card/issue}" class="btn btn-success shadow-sm">Выпустить карту</a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" th:if="${cards != null and !cards.isEmpty()}">
+            <div class="col" th:each="card : ${cards}">
+                <div class="card h-100 card-hover" th:classappend="${card.closed} ? 'border-danger' : ''">
+                    <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                        <span>Карта</span>
+                        <i class="bi bi-credit-card-2-front fs-4"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            <span th:text="|**** **** **** ${card.number.substring(card.number.length() - 4)}|"></span>
+                        </h5>
+                        <p class="balance mb-2" th:text="${card.account.formatBalance()}">0 ₽</p>
+                        <p class="text-muted-small">Текущий баланс</p>
+                        <p class="mb-1"><strong>Счёт:</strong> <span th:text="${card.account.number}"></span></p>
+                        <p class="mb-0 text-muted-small">
+                            Открыта <span th:text="${card.formatOpenedAt()}"></span>
+                        </p>
+                        <div class="mt-2">
+                            <span th:if="${card.closed}" class="badge bg-danger">Закрыта</span>
+                            <span th:unless="${card.closed}" th:if="${card.blocked}" class="badge bg-warning text-dark">Заблокирована</span>
+                            <span th:unless="${card.closed || card.blocked}" class="badge bg-success">Активна</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light border-0 d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <span th:text="${card.owner.firstName + ' ' + card.owner.lastName}"></span>
+                        </small>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary btn-pin"
+                                    data-bs-toggle="modal"
+                                    th:attr="data-bs-target='#changePinModal-' + ${card.id}"
+                                    th:disabled="${card.closed}">
+                                ПИН
+                            </button>
+                            <button type="button" class="btn btn-sm"
+                                    th:classappend="${card.blocked} ? 'btn-outline-success' : 'btn-outline-warning'"
+                                    data-bs-toggle="modal"
+                                    th:attr="data-bs-target='#blockCardModal-' + ${card.id}"
+                                    th:disabled="${card.closed}">
+                                <span th:text="${card.blocked} ? 'Разблокировать' : 'Блокировать'"></span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-close-card"
+                                    data-bs-toggle="modal"
+                                    th:attr="data-bs-target='#closeCardModal-' + ${card.id}"
+                                    th:disabled="${card.closed}">
+                                Закрыть
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center py-5" th:if="${cards == null or cards.isEmpty()}">
+            <h4 class="text-muted">У вас пока нет карт</h4>
+            <p class="text-muted">Нажмите кнопку выше, чтобы оформить первую карту.</p>
+        </div>
+    </div>
+
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="section-title">Ваши вклады</h3>
+            <a th:href="@{/deposit/terms}" class="btn btn-primary shadow-sm">Открыть вклад</a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 g-4" th:if="${deposits != null and !deposits.isEmpty()}">
+            <div class="col" th:each="deposit : ${deposits}">
+                <div class="card deposit-card h-100" th:classappend="${deposit.isClosed()} ? 'deposit-card-closed' : ''">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title mb-0" th:text="${deposit.terms.name}">Накопительный</h5>
+                            <span class="badge bg-success" th:text="${deposit.terms.interestRate} + '%'">7.5%</span>
+                        </div>
+                        <p class="balance mb-2" th:text="${deposit.account.formatBalance()}">0 ₽</p>
+                        <p class="text-muted-small mb-2">Текущая сумма</p>
+                        <ul class="list-unstyled text-muted small mb-3">
+                            <li>Срок: <strong th:text="${deposit.terms.termMonths} + ' мес.'"></strong></li>
+                            <li>Открыт: <span th:text="${deposit.formatOpenedAt()}"></span></li>
+                            <li>Капитализация: <span th:text="${deposit.terms.capitalizationPeriod.displayName}"></span></li>
+                        </ul>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span th:if="${!deposit.isClosed()}" class="badge bg-success">Активен</span>
+                                <span th:if="${deposit.isClosed()}" class="badge bg-danger">Закрыт</span>
+                            </div>
+                            <div class="btn-group" th:if="${!deposit.isClosed()}">
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-deposit"
+                                        data-bs-toggle="modal"
+                                        th:attr="data-bs-target='#replenishDepositModal-' + ${deposit.id}"
+                                        th:disabled="${!deposit.terms.replenishable}">
+                                    Пополнить
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning btn-withdraw"
+                                        data-bs-toggle="modal"
+                                        th:attr="data-bs-target='#withdrawDepositModal-' + ${deposit.id}"
+                                        th:disabled="${!deposit.terms.partialWithdrawal}">
+                                    Снять
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal"
+                                        th:attr="data-bs-target='#closeDepositModal-' + ${deposit.id}">
+                                    Закрыть
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center py-5" th:if="${deposits == null or deposits.isEmpty()}">
+            <h4 class="text-muted">У вас пока нет вкладов</h4>
+            <p class="text-muted">Нажмите кнопку выше, чтобы открыть первый вклад.</p>
+        </div>
+    </div>
+
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="section-title">Накопительные цели</h3>
+            <button type="button" class="btn btn-info shadow-sm" data-bs-toggle="modal" data-bs-target="#createGoalModal">
+                Создать цель
+            </button>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 g-4" th:if="${goals != null and !goals.isEmpty()}">
+            <div class="col" th:each="goal : ${goals}">
+                <div class="card goal-card h-100" th:classappend="${goal.closed} ? 'goal-card-closed' : ''">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title mb-0" th:text="${goal.displayName}">Путешествие</h5>
+                            <div>
+                                <span th:if="${goal.closed}" class="badge bg-danger">Закрыта</span>
+                                <span th:if="${goal.isCompleted()}" class="badge bg-success">Выполнена</span>
+                                <span th:if="${!goal.closed && !goal.isCompleted()}" class="badge bg-info">Активна</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between text-muted small mb-1">
+                                <span th:text="${goal.account.formatBalance()}">0 ₽</span>
+                                <span th:text="${goal.formatTargetBalance()}">100 000 ₽</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar"
+                                     th:style="'width: ' + ${goal.account.balance / goal.targetBalance * 100} + '%'"
+                                     th:attr="aria-valuenow=${goal.account.balance / goal.targetBalance * 100},
+                                              aria-valuemin=0, aria-valuemax=100">
+                                </div>
+                            </div>
+                            <div class="text-end text-muted small mt-1">
+                                <span th:text="${goal.getProgress()} + '%'">0%</span>
+                            </div>
+                        </div>
+
+                        <ul class="list-unstyled text-muted small mb-3">
+                            <li>Цель: <strong th:text="${goal.formatTargetBalance()}"></strong></li>
+                            <li>До <span th:text="${goal.formatTargetDate()}"></span></li>
+                            <li>Открыта: <span th:text="${goal.formatOpenedAt()}"></span></li>
+                        </ul>
+
+                        <div class="d-flex justify-content-end gap-2" th:if="${!goal.closed}">
+                            <button type="button" class="btn btn-sm btn-outline-info btn-replenish-goal"
+                                    data-bs-toggle="modal"
+                                    th:attr="data-bs-target='#replenishGoalModal-' + ${goal.id}">
+                                Пополнить
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-close-goal"
+                                    data-bs-toggle="modal"
+                                    th:attr="data-bs-target='#closeGoalModal-' + ${goal.id}">
+                                Закрыть
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center py-5" th:if="${goals == null or goals.isEmpty()}">
+            <i class="bi bi-piggy-bank fs-1 text-muted mb-3"></i>
+            <h4 class="text-muted">У вас пока нет целей</h4>
+            <p class="text-muted">Создайте первую цель и начните копить!</p>
+        </div>
+    </div>
+
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="section-title">Ваши кредиты</h3>
+            <a th:href="@{/credit/terms}" class="btn btn-danger shadow-sm">Оформить кредит</a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 g-4" th:if="${credits != null and !credits.isEmpty()}">
+            <div class="col" th:each="credit : ${credits}">
+                <div class="card credit-card h-100" th:classappend="${credit.closed} ? 'credit-card-closed' : ''">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title mb-0">Кредитный счёт</h5>
+                            <span class="badge bg-danger" th:text="${credit.interestRate} + '%'">5%</span>
+                        </div>
+
+                        <p class="balance text-danger mb-2" th:text="${credit.formatTargetBalance()}">0 ₽</p>
+                        <p class="text-muted-small mb-2">К возврату</p>
+
+                        <div class="mb-3" th:if="${!credit.closed}">
+                            <div class="d-flex justify-content-between text-muted small mb-1">
+                                <span th:text="${credit.account.formatBalance()}">0 ₽</span>
+                                <span th:text="${credit.formatTargetBalance()}">100 000 ₽</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar progress-bar-credit" role="progressbar"
+                                     th:style="'width: ' + ${credit.getRepaymentProgress()} + '%'"
+                                     th:attr="aria-valuenow=${credit.getRepaymentProgress()},
+                                              aria-valuemin=0, aria-valuemax=100">
+                                </div>
+                            </div>
+                            <div class="text-end text-muted small mt-1">
+                                <span th:text="${credit.getRepaymentProgressFormatted()} + '%'">0%</span> погашено
+                            </div>
+                        </div>
+
+                        <ul class="list-unstyled text-muted small mb-3">
+                            <li>Выдано: <strong th:text="${credit.formatInitialSum()}"></strong></li>
+                            <li>Открыт: <span th:text="${credit.formatOpenedAt()}"></span></li>
+                            <li th:if="${!credit.closed}">
+                                Следующее начисление: <span th:text="${credit.formatNextInterestAccrual()}"></span>
+                            </li>
+                        </ul>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span th:if="${credit.closed}" class="badge bg-secondary">Погашен</span>
+                                <span th:unless="${credit.closed}" class="badge bg-danger">Активен</span>
+                            </div>
+                            <div class="btn-group" th:if="${!credit.closed}">
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-replenish-credit"
+                                        data-bs-toggle="modal"
+                                        th:attr="data-bs-target='#repayCreditModal-' + ${credit.id}">
+                                    Погасить
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        data-bs-toggle="modal"
+                                        th:attr="data-bs-target='#closeCreditModal-' + ${credit.id}">
+                                    Закрыть
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center py-5" th:if="${credits == null or credits.isEmpty()}">
+            <i class="bi bi-currency-exchange fs-1 text-muted mb-3"></i>
+            <h4 class="text-muted">У вас пока нет кредитов</h4>
+            <p class="text-muted">Оформите кредит для развития или крупных покупок.</p>
+        </div>
+    </div>
+
+</div>
+<div th:each="card : ${cards}" class="modal fade" th:id="'changePinModal-' + ${card.id}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{'/card/' + ${card.id} + '/change-pin'}" method="post" class="needs-validation" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title">Смена ПИН-кода</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Карта: <strong th:text="|**** **** **** ${card.number.substring(card.number.length() - 4)}|"></strong>
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Текущий ПИН</label>
+                        <input type="password" class="form-control" name="currentPin" maxlength="4" pattern="\d{4}" placeholder="••••" required>
+                        <div class="invalid-feedback">Введите 4 цифры</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Новый ПИН</label>
+                        <input type="password" class="form-control" name="newPin" maxlength="4" pattern="\d{4}" placeholder="••••" required>
+                        <div class="invalid-feedback">Введите 4 цифры</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Повторите новый ПИН</label>
+                        <input type="password" class="form-control" name="newPinConfirm" maxlength="4" pattern="\d{4}" placeholder="••••" required>
+                        <div class="invalid-feedback">ПИН-коды не совпадают</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success">Сменить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:each="card : ${cards}" class="modal fade" th:id="'blockCardModal-' + ${card.id}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{'/card/' + ${card.id} + '/toggle-block'}" method="post">
+                <div th:class="'modal-header ' + (${card.blocked} ? 'modal-header-warning' : '')">
+                    <h5 class="modal-title">
+                        <span th:text="${card.blocked} ? 'Разблокировать карту' : 'Заблокировать карту'"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Вы уверены?</p>
+                    <p class="text-muted small mb-0">
+                        Карта: <strong th:text="|**** **** **** ${card.number.substring(card.number.length() - 4)}|"></strong><br>
+                        Счёт: <span th:text="${card.account.number}"></span>
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn" th:classappend="${card.blocked ? 'btn-success' : 'btn-warning'}">
+                        <span th:text="${card.blocked} ? 'Разблокировать' : 'Заблокировать'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:each="card : ${cards}" class="modal fade" th:id="'closeCardModal-' + ${card.id}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{'/card/' + ${card.id} + '/close'}" method="post">
+                <div class="modal-header modal-header-danger">
+                    <h5 class="modal-title">Закрытие карты</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Вы уверены, что хотите <strong>закрыть</strong> карту?</p>
+                    <p class="text-muted small mb-0">
+                        Карта: <strong th:text="|**** **** **** ${card.number.substring(card.number.length() - 4)}|"></strong><br>
+                        Счёт: <span th:text="${card.account.number}"></span>
+                    </p>
+                    <div class="alert alert-warning mt-3 mb-0">
+                        После закрытия карта станет недоступной навсегда.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-danger">Закрыть карту</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:each="deposit : ${deposits}" class="modal fade" th:id="'replenishDepositModal-' + ${deposit.id}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{'/deposit/' + ${deposit.id} + '/replenish'}" method="post" class="needs-validation" novalidate>
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Пополнение вклада</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Вклад: <strong th:text="${deposit.terms.name}"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label">Сумма пополнения (₽)</label>
+                        <input type="number" class="form-control" name="amount" min="1000" step="1000" required>
+                        <div class="invalid-feedback">Минимум 1000 ₽, кратно 1000</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Карта для списания</label>
+                        <select class="form-select" name="cardId" required>
+                            <option value="">Выберите карту</option>
+                            <option th:each="card : ${cards}"
+                                    th:value="${card.id}"
+                                    th:text="|**** **** **** ${card.number.substring(card.number.length() - 4)} — ${card.account.formatBalance()}|"
+                                    th:disabled="${card.blocked or card.closed}">
+                            </option>
+                        </select>
+                        <div class="form-text">Только активные карты</div>
+                        <div class="invalid-feedback">Выберите карту</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success">Пополнить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:each="deposit : ${deposits}" class="modal fade" th:id="'withdrawDepositModal-' + ${deposit.id}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{'/deposit/' + ${deposit.id} + '/withdraw'}" method="post" class="needs-validation" novalidate>
+                <div class="modal-header modal-header-warning">
+                    <h5 class="modal-title">Снятие средств</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        Вклад: <strong th:text="${deposit.terms.name}"></strong><br>
+                        Доступно: <strong th:text="${deposit.account.formatBalance()}"></strong>
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">Сумма снятия (₽)</label>
+                        <input type="number" class="form-control" name="amount" min="1000" step="1000" required>
+                        <div class="form-text">Минимум 1000 ₽, кратно 1000</div>
+                        <div class="invalid-feedback">Введите корректную сумму</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Карта для зачисления</label>
+                        <select class="form-select" name="cardId" required>
+                            <option value="">Выберите карту</option>
+                            <option th:each="card : ${cards}"
+                                    th:value="${card.id}"
+                                    th:text="|**** **** **** ${card.number.substring(card.number.length() - 4)} — ${card.account.formatBalance()}|"
+                                    th:disabled="${card.blocked or card.closed}">
+                            </option>
+                        </select>
+                        <div class="form-text">Только активные карты</div>
+                        <div class="invalid-feedback">Выберите карту</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-warning">Снять</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:each="deposit : ${deposits}" class="modal fade" th:id="'closeDepositModal-' + ${deposit.id}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{'/deposit/' + ${deposit.id} + '/close'}" method="post">
+                <div class="modal-header modal-header-danger">
+                    <h5 class="modal-title">Закрытие вклада</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Вы уверены, что хотите <strong>закрыть</strong> вклад?</p>
+                    <p class="text-muted small">Сумма с процентами будет зачислена на счёт.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-danger">Закрыть вклад</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createGoalModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{/goal/create}" method="post" class="needs-validation" novalidate>
+                <div class="modal-header modal-header-info">
+                    <h5 class="modal-title">Новая цель</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название</label>
+                        <input type="text" class="form-control" name="displayName" maxlength="32" required>
+                        <div class="invalid-feedback">Введите название (до 32 символов)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Целевая сумма (₽)</label>
+                        <input type="number" class="form-control" name="targetBalance" min="1000" step="1000" required>
+                        <div class="invalid-feedback">Минимум 1000 ₽, кратно 1000</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Дата цели</label>
+                        <input type="date" class="form-control" name="targetDate" required>
+                        <div class="invalid-feedback">Выберите дату</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-info">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:each="goal : ${goals}" class="modal fade" th:id="'replenishGoalModal-' + ${goal.id}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{'/goal/' + ${goal.id} + '/replenish'}" method="post" class="needs-validation" novalidate>
+                <div class="modal-header modal-header-info">
+                    <h5 class="modal-title">Пополнение цели</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Цель: <strong th:text="${goal.displayName}"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label">Сумма (₽)</label>
+                        <input type="number" class="form-control" name="amount" min="1000" step="1000" required>
+                        <div class="invalid-feedback">Минимум 1000 ₽, кратно 1000</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Карта для списания</label>
+                        <select class="form-select" name="cardId" required>
+                            <option value="">Выберите карту</option>
+                            <option th:each="card : ${cards}"
+                                    th:value="${card.id}"
+                                    th:text="|**** **** **** ${card.number.substring(card.number.length() - 4)} — ${card.account.formatBalance()}|"
+                                    th:disabled="${card.blocked or card.closed}">
+                            </option>
+                        </select>
+                        <div class="form-text">Только активные карты</div>
+                        <div class="invalid-feedback">Выберите карту</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-info">Пополнить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:each="goal : ${goals}" class="modal fade" th:id="'closeGoalModal-' + ${goal.id}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{/goal/close}" method="post" class="needs-validation" novalidate>
+                <input type="hidden" name="goalId" th:value="${goal.id}" />
+                <div class="modal-header modal-header-danger">
+                    <h5 class="modal-title">Закрытие цели</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        Вы уверены, что хотите <strong>закрыть</strong> цель?
+                    </p>
+                    <p class="text-muted small mb-3">
+                        Цель: <strong th:text="${goal.displayName}"></strong><br>
+                        Накоплено: <strong th:text="${goal.account.formatBalance()}"></strong>
+                    </p>
+
+                    <div class="mb-3" th:if="${!goal.isCompleted()}">
+                        <div class="alert alert-warning">
+                            Цель ещё не выполнена. Средства будут возвращены.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Зачислить на карту</label>
+                        <select class="form-select" name="cardId" required>
+                            <option value="">Выберите карту</option>
+                            <option th:each="card : ${cards}"
+                                    th:value="${card.id}"
+                                    th:text="|**** **** **** ${card.number.substring(card.number.length() - 4)} — ${card.account.formatBalance()}|"
+                                    th:disabled="${card.blocked or card.closed}">
+                            </option>
+                        </select>
+                        <div class="form-text">Только активные карты</div>
+                        <div class="invalid-feedback">Выберите карту</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-danger">Закрыть цель</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:each="credit : ${credits}" class="modal fade" th:id="'repayCreditModal-' + ${credit.id}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{'/credit/' + ${credit.id} + '/repay'}" method="post" class="needs-validation" novalidate>
+                <div class="modal-header" style="background:#dc3545;color:#fff;">
+                    <h5 class="modal-title">Погашение кредита</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        К возврату: <strong th:text="${credit.formatTargetBalance()}"></strong>
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">Сумма погашения (₽)</label>
+                        <input type="number" class="form-control" name="amount" min="1000" step="1000" required>
+                        <div class="invalid-feedback">Минимум 1000 ₽, кратно 1000</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Карта для списания</label>
+                        <select class="form-select" name="cardId" required>
+                            <option value="">Выберите карту</option>
+                            <option th:each="card : ${cards}"
+                                    th:value="${card.id}"
+                                    th:text="|**** **** **** ${card.number.substring(card.number.length() - 4)} — ${card.account.formatBalance()}|"
+                                    th:disabled="${card.blocked or card.closed}">
+                            </option>
+                        </select>
+                        <div class="form-text">Только активные карты</div>
+                        <div class="invalid-feedback">Выберите карту</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-danger">Погасить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:each="credit : ${credits}" class="modal fade" th:id="'closeCreditModal-' + ${credit.id}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{'/credit/' + ${credit.id} + '/close'}" method="post">
+                <div class="modal-header modal-header-secondary">
+                    <h5 class="modal-title">Закрытие кредита</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Вы уверены, что хотите <strong>закрыть</strong> кредит?</p>
+                    <p class="text-muted small mb-0">
+                        Остаток к возврату: <strong th:text="${credit.formatTargetBalance()}"></strong>
+                    </p>
+                    <div class="alert alert-warning mt-3 mb-0">
+                        Кредит можно закрыть только после полного погашения.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-secondary" th:disabled="${credit.targetBalance > 0}">Закрыть</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/home.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль — Мой Банк</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/css/profile.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center">
+            <a class="navbar-brand fw-bold" href="/home">
+                <i class="bi bi-bank me-2"></i>Мой Банк
+            </a>
+
+            <div sec:authorize="hasRole('ADMIN')" class="ms-3">
+                <a th:href="@{/backup}" class="btn btn-outline-light">
+                    <i class="bi bi-cloud-download me-1"></i>
+                    <span class="d-none d-sm-inline">Бекапы</span>
+                </a>
+
+                <a th:href="@{/statement}" class="btn btn-outline-light">
+                    <i class="bi bi-journal-text me-1"></i>
+                    <span class="d-none d-sm-inline">Сформировать выписку</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="d-flex gap-1">
+            <a th:href="@{/branch}" class="btn btn-branch text-white me-1" title="Филиалы">
+                <i class="bi bi-building"></i>
+                <span class="d-none d-sm-inline ms-1">Филиалы</span>
+            </a>
+
+            <a th:href="@{/cash-machine}" class="btn btn-atm text-white me-1" title="Банкоматы">
+                <i class="bi bi-cash-coin"></i>
+                <span class="d-none d-sm-inline ms-1">Банкоматы</span>
+            </a>
+
+            <button class="btn btn-profile text-white me-1 btn-profile-active" disabled>
+                Профиль
+            </button>
+
+            <form th:action="@{/logout}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-logout text-white">Выйти</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="profile-container">
+        <div class="profile-header">
+            <div class="user-avatar-large">
+                <span th:text="${#strings.substring(user.firstName, 0, 1)} + ${#strings.substring(user.lastName, 0, 1)}">ИФ</span>
+            </div>
+            <h2 class="fw-bold mb-2" th:text="${user.firstName + ' ' + user.lastName}">Иван Иванов</h2>
+            <p class="mb-0">Клиент Мой Банк</p>
+        </div>
+
+        <div class="container-fluid py-4">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="info-card">
+                        <div class="info-card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-person me-2"></i>Персональная информация</h5>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Фамилия</div>
+                            <div class="info-value" th:text="${user.lastName}">Иванов</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Имя</div>
+                            <div class="info-value" th:text="${user.firstName}">Иван</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Отчество</div>
+                            <div class="info-value" th:text="${user.patronymic}">Иванович</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Дата рождения</div>
+                            <div class="info-value" th:text="${user.formatBirthDate()}">15.05.1990</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Регион</div>
+                            <div class="info-value" th:text="${user.region}">no region</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Город</div>
+                            <div class="info-value" th:text="${user.city}">no city</div>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>Контактная информация</h5>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Email</div>
+                            <div class="info-value" th:text="${user.email}">no email</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <h5 class="mb-0"><i class="bi bi-passport me-2"></i>Паспортные данные</h5>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Серия</div>
+                            <div class="info-value" th:text="${user.passport.series}">no passport series</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Номер</div>
+                            <div class="info-value" th:text="${user.passport.number}">no passport number</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Дата выдачи</div>
+                            <div class="info-value" th:text="${user.passport.formatIssueDate()}">no password issue date</div>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Финансовая информация</h5>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Количество счетов</div>
+                            <div class="info-value" th:text="${accountsCount}">no accounts count</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Активные карты</div>
+                            <div class="info-value" th:text="${activeCardsCount}">no active cards count</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

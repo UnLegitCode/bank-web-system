@@ -1,0 +1,144 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+}
+
+.navbar-custom {
+    background: #0d6efd;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
+}
+
+.btn-branch, .btn-atm {
+    background: #495057;
+    border: none;
+}
+
+.btn-branch:hover, .btn-atm:hover {
+    background: #343a40;
+}
+
+.btn-profile {
+    background: #6c757d;
+    border: none;
+}
+
+.btn-profile:hover {
+    background: #5a6268;
+}
+
+.btn-logout {
+    background: #dc3545;
+    border: none;
+}
+
+.btn-logout:hover {
+    background: #bb2d3b;
+}
+
+.btn-profile-active {
+    background: #5a6268 !important;
+    color: #fff !important;
+    cursor: default;
+    pointer-events: none;
+}
+
+.profile-container {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+    overflow: hidden;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: white;
+    padding: 3rem 2rem;
+    text-align: center;
+}
+
+.user-avatar-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 3rem;
+    font-weight: bold;
+    margin: 0 auto 1rem;
+    border: 4px solid white;
+}
+
+.info-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, .05);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.info-card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.info-item {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: .9rem;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    font-size: 1.1rem;
+    color: #212529;
+}
+
+.edit-btn {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    border: none;
+    border-radius: 8px;
+    padding: 0.4rem 1.2rem;
+    color: white;
+    font-weight: 600;
+    font-size: .9rem;
+    transition: all 0.3s ease;
+}
+
+.edit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+}
+
+.badge-premium {
+    background: linear-gradient(135deg, #ffd700, #ffb800);
+    color: #1e1e1e;
+    font-weight: 600;
+}
+
+.list-group-item {
+    border: none;
+    padding: 0.75rem 0;
+    font-size: .95rem;
+}
+
+.list-group-item i {
+    width: 20px;
+}
