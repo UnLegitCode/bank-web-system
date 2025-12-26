@@ -2,3 +2,4 @@
 .gigaidea/
 .gradle/
 build/
+.env
