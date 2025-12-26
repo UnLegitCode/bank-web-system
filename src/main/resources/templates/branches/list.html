@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Филиалы — Мой Банк</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/css/branches/list.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center">
+            <a class="navbar-brand fw-bold" href="/home">
+                <i class="bi bi-bank me-2"></i>Мой Банк
+            </a>
+
+            <div sec:authorize="hasRole('ADMIN')" class="ms-3">
+                <a th:href="@{/backup}" class="btn btn-outline-light">
+                    <i class="bi bi-cloud-download me-1"></i>
+                    <span class="d-none d-sm-inline">Бекапы</span>
+                </a>
+
+                <a th:href="@{/statement}" class="btn btn-outline-light">
+                    <i class="bi bi-journal-text me-1"></i>
+                    <span class="d-none d-sm-inline">Сформировать выписку</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="d-flex gap-1">
+            <button class="btn btn-branch text-white me-1 btn-branch-active" disabled>
+                <i class="bi bi-building"></i>
+                <span class="d-none d-sm-inline ms-1">Филиалы</span>
+            </button>
+
+            <a th:href="@{/cash-machine}" class="btn btn-atm text-white me-1" title="Банкоматы">
+                <i class="bi bi-cash-coin"></i>
+                <span class="d-none d-sm-inline ms-1">Банкоматы</span>
+            </a>
+
+            <a th:href="@{/profile}" class="btn btn-profile text-white me-1">Профиль</a>
+
+            <form th:action="@{/logout}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-logout text-white">Выйти</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="section-title mb-3">
+                <i class="bi bi-geo-alt-fill text-primary me-2"></i>
+                Наши филиалы
+            </h1>
+            <p class="text-muted lead">Найдите ближайшее отделение банка</p>
+        </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div th:if="${branches != null and !branches.isEmpty()}">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <div class="col" th:each="branch : ${branches}">
+                <div class="card h-100 card-branch">
+                    <div class="card-header-branch d-flex justify-content-between align-items-center">
+                        <span>Филиал</span>
+                        <i class="bi bi-building branch-icon"></i>
+                    </div>
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3">
+                            <i class="bi bi-geo-alt text-primary me-2"></i>
+                            <span th:text="${branch.address.city}">Москва</span>
+                        </h5>
+
+                        <ul class="list-unstyled text-muted mb-4">
+                            <li class="mb-2">
+                                <i class="bi bi-signpost-2 text-secondary me-2"></i>
+                                <span th:text="${branch.address.region}">Москва</span>,
+                                <span th:text="${branch.address.city}">Москва</span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-house-door text-secondary me-2"></i>
+                                ул. <span th:text="${branch.address.street}">Тверская</span>,
+                                д. <span th:text="${branch.address.houseNumber}">15</span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-telephone-fill text-success me-2"></i>
+                                <a th:href="'tel:' + ${branch.contactPhoneNumber}"
+                                   class="phone-link"
+                                   th:text="${branch.contactPhoneNumber}">+7 (495) 123-45-67</a>
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-clock-history text-info me-2"></i>
+                                <span th:text="${branch.workingHours}">Пн–Пт: 09:00–20:00</span>
+                            </li>
+                        </ul>
+
+                        <div class="d-flex justify-content-end">
+                            <a th:href="'https://yandex.ru/maps/?text=' + ${#strings.replace(branch.address.region + ' ' + branch.address.city + ' ' + branch.address.street + ' ' + branch.address.houseNumber, ' ', '+')}"
+                               target="_blank"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-map me-1"></i> На карте
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${branches == null or branches.isEmpty()}">
+        <div class="text-center py-5">
+            <i class="bi bi-building fs-1 text-muted mb-3"></i>
+            <h4 class="text-muted">Филиалы временно недоступны</h4>
+            <p class="text-muted">Пожалуйста, попробуйте позже.</p>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
